@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sudoku">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Sudoku Offline</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--text:#111827;--muted:#6b7280;--line:#9ca3af;--strong:#111827;--accent:#2563eb;--accentbg:#dbeafe;--peer:#eff6ff;--bad:#dc2626;--good:#15803d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.app{max-width:620px;margin:auto;padding:14px 12px 32px}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.brand{font-size:22px;font-weight:800}.sub{font-size:13px;color:var(--muted)}
+button,select{font:inherit;color:inherit}button{cursor:pointer}.btn{min-height:44px;padding:8px 13px;border:1px solid #cbd5e1;border-radius:10px;background:var(--panel);font-weight:650}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.active{background:var(--accentbg);border-color:var(--accent)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}.difficulty{min-height:44px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;padding:0 10px}
+.info{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0}.status{font-size:14px;color:var(--muted);min-height:20px}.timer{font:700 18px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
+.board{display:grid;grid-template-columns:repeat(9,1fr);aspect-ratio:1;width:100%;background:var(--strong);border:2px solid var(--strong);gap:1px;touch-action:manipulation}
+.cell{position:relative;border:0;background:var(--panel);display:flex;align-items:center;justify-content:center;padding:0;font-size:clamp(21px,7vw,32px);font-weight:500;min-width:0}
+.cell.given{font-weight:850;background:#f3f4f6}.cell.user{color:#1d4ed8}.cell.sel{outline:3px solid var(--accent);outline-offset:-3px;background:var(--accentbg)}.cell.peer:not(.sel){background:var(--peer)}.cell.bad{box-shadow:inset 0 0 0 3px var(--bad)}
+.cell:nth-child(3n){border-right:2px solid var(--strong)}.cell:nth-child(9n){border-right:0}.cell:nth-child(n+19):nth-child(-n+27),.cell:nth-child(n+46):nth-child(-n+54){border-bottom:2px solid var(--strong)}
+.notes{position:absolute;inset:1px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);font-size:clamp(13px,4vw,19px);font-weight:850;line-height:1}.notes span{display:flex;align-items:center;justify-content:center}
+.nums{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin-top:12px}.num{min-height:48px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;font-size:21px;font-weight:750}
+.paused{aspect-ratio:1;border:2px solid #cbd5e1;border-radius:10px;background:#fff;display:none;align-items:center;justify-content:center;text-align:center;padding:20px}.paused.show{display:flex}.hidden{display:none!important}
+.panel{margin-top:14px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px}.panel h2{font-size:17px;margin:0 0 10px}.statsgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center;padding:9px 4px;background:#f8fafc;border-radius:9px}.stat b{display:block;font-size:18px}.stat span{font-size:11px;color:var(--muted)}
+.history{margin-top:10px;font-size:13px}.history div{display:flex;justify-content:space-between;border-top:1px solid #eee;padding:7px 0}.celebrate{font-weight:800;color:var(--good)}
+.footer{font-size:12px;color:var(--muted);text-align:center;margin-top:12px}
+@media(max-width:390px){.app{padding-left:7px;padding-right:7px}.btn{padding-left:10px;padding-right:10px}.nums{gap:3px}.num{min-height:45px}}
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="top">
+    <div><div class="brand">Sudoku Offline</div><div class="sub">No ads • no account • works without internet</div></div>
+    <button id="statsBtn" class="btn" type="button">Stats</button>
+  </div>
+
+  <div class="controls">
+    <select id="difficulty" class="difficulty" aria-label="Difficulty">
+      <option>Easy</option><option selected>Medium</option><option>Hard</option><option>Evil</option>
+    </select>
+    <button id="newBtn" class="btn primary" type="button">New Puzzle</button>
+    <button id="pauseBtn" class="btn" type="button">Pause</button>
+  </div>
+
+  <div class="info"><div id="status" class="status" aria-live="polite">Loading puzzle…</div><div id="timer" class="timer">00:00</div></div>
+  <div id="board" class="board" role="grid" aria-label="Sudoku board"></div>
+  <div id="paused" class="paused"><div><div style="font-size:36px">⏸</div><h2>Paused</h2><div class="sub">Board hidden. No studying off the clock.</div></div></div>
+
+  <div id="numbers" class="nums"></div>
+  <div class="controls" style="justify-content:center">
+    <button id="notesBtn" class="btn" type="button">✎ Notes: Off</button>
+    <button id="eraseBtn" class="btn" type="button">Erase</button>
+    <button id="checkBtn" class="btn" type="button">Check</button>
+  </div>
+
+  <section id="statsPanel" class="panel hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center"><h2>Your Results</h2><button id="closeStats" class="btn" type="button">Close</button></div>
+    <select id="statsDifficulty" class="difficulty" style="width:100%;margin-bottom:10px"><option>Easy</option><option selected>Medium</option><option>Hard</option><option>Evil</option></select>
+    <div class="statsgrid">
+      <div class="stat"><b id="completed">0</b><span>COMPLETED</span></div>
+      <div class="stat"><b id="best">—</b><span>BEST TIME</span></div>
+      <div class="stat"><b id="average">—</b><span>AVG TIME</span></div>
+    </div>
+    <div id="history" class="history"></div>
+  </section>
+  <div class="footer">Every move is automatically saved on this device. Your unfinished puzzle restores when you reopen this file.</div>
+</main>
+
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const board=$('board'), pausedBox=$('paused'), status=$('status'), timer=$('timer');
+const SAVE='sudokuOfflineV1_game', STATS='sudokuOfflineV1_stats';
+let game=null, selected=null, noteMode=false, paused=false, tick=null;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function pattern(r,c){return (r*3+Math.floor(r/3)+c)%9}
+function makeSolved(){
+ const rows=shuffle([0,1,2].flatMap(g=>shuffle([0,1,2]).map(r=>g*3+r)));
+ const cols=shuffle([0,1,2].flatMap(g=>shuffle([0,1,2]).map(c=>g*3+c)));
+ const nums=shuffle([1,2,3,4,5,6,7,8,9]);
+ return rows.flatMap(r=>cols.map(c=>nums[pattern(r,c)])).join('');
+}
+function candidates(grid,idx){
+ if(grid[idx]!=='0')return [];
+ const r=Math.floor(idx/9),c=idx%9,used=new Set();
+ for(let k=0;k<9;k++){used.add(grid[r*9+k]);used.add(grid[k*9+c])}
+ const br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+ for(let rr=br;rr<br+3;rr++)for(let cc=bc;cc<bc+3;cc++)used.add(grid[rr*9+cc]);
+ return '123456789'.split('').filter(n=>!used.has(n));
+}
+function countSolutions(grid,limit=2){
+ let best=-1,bestC=null;
+ for(let i=0;i<81;i++)if(grid[i]==='0'){const c=candidates(grid,i);if(!c.length)return 0;if(!bestC||c.length<bestC.length){best=i;bestC=c;if(c.length===1)break}}
+ if(best===-1)return 1;
+ let total=0,arr=grid.split('');
+ for(const n of bestC){arr[best]=n;total+=countSolutions(arr.join(''),limit-total);if(total>=limit)return total}
+ return total;
+}
+function makePuzzle(diff){
+ const solution=makeSolved();let p=solution.split('');
+ const target={Easy:40,Medium:34,Hard:29,Evil:26}[diff]||34;
+ const order=shuffle([...Array(81).keys()]);
+ for(const idx of order){
+   if(p.filter(x=>x!=='0').length<=target)break;
+   const old=p[idx];p[idx]='0';
+   if(countSolutions(p.join(''),2)!==1)p[idx]=old;
+ }
+ return {puzzle:p.join(''),solution};
+}
+function newGame(diff){
+ status.textContent='Creating a '+diff+' puzzle…';
+ setTimeout(()=>{
+  const x=makePuzzle(diff);
+  game={version:1,difficulty:diff,puzzle:x.puzzle,solution:x.solution,values:x.puzzle.split(''),notes:Array.from({length:81},()=>[]),seconds:0,checks:0,finished:false,started:Date.now()};
+  selected=null;noteMode=false;paused=false;$('notesBtn').textContent='✎ Notes: Off';$('notesBtn').classList.remove('active');$('pauseBtn').textContent='Pause';
+  save();render();status.textContent=diff+' puzzle ready.';
+ },20);
+}
+function save(){if(game)localStorage.setItem(SAVE,JSON.stringify(game))}
+function load(){
+ try{const g=JSON.parse(localStorage.getItem(SAVE));if(g&&g.puzzle&&g.solution&&g.values){game=g;return true}}catch(e){}
+ return false;
+}
+function fmt(s){s=Math.max(0,Math.floor(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function render(){
+ if(!game)return;
+ timer.textContent=fmt(game.seconds);board.innerHTML='';
+ for(let i=0;i<81;i++){
+  const b=document.createElement('button');b.type='button';b.className='cell';b.setAttribute('aria-label','Row '+(Math.floor(i/9)+1)+', column '+(i%9+1));
+  const given=game.puzzle[i]!=='0';if(given)b.classList.add('given');else if(game.values[i]!=='0')b.classList.add('user');
+  if(selected!==null){const r=Math.floor(i/9),c=i%9,sr=Math.floor(selected/9),sc=selected%9;if(i===selected)b.classList.add('sel');else if(r===sr||c===sc||(Math.floor(r/3)===Math.floor(sr/3)&&Math.floor(c/3)===Math.floor(sc/3)))b.classList.add('peer')}
+  if(game.values[i]!=='0')b.textContent=game.values[i];
+  else if(game.notes[i]&&game.notes[i].length){const n=document.createElement('div');n.className='notes';game.notes[i].slice().sort().forEach(v=>{const s=document.createElement('span');s.textContent=v;n.appendChild(s)});b.appendChild(n)}
+  b.addEventListener('click',()=>{if(!paused&&!game.finished){selected=i;render()}});
+  board.appendChild(b);
+ }
+ board.classList.toggle('hidden',paused);pausedBox.classList.toggle('show',paused);$('numbers').classList.toggle('hidden',paused);
+}
+function input(n){
+ if(!game||paused||game.finished||selected===null||game.puzzle[selected]!=='0')return;
+ if(noteMode){
+   if(game.values[selected]!=='0')return;
+   const a=game.notes[selected]||[];const at=a.indexOf(n);
+   if(at>=0)a.splice(at,1);else if(a.length<4)a.push(n);else{status.textContent='Maximum of 4 notes per square.';return}
+ }else{game.values[selected]=n;game.notes[selected]=[];status.textContent='Answer entered — not checked.'}
+ save();render();checkSolved();
+}
+function checkSolved(){
+ if(game.values.join('')===game.solution){
+   game.finished=true;save();recordResult();status.innerHTML='<span class="celebrate">🎉 Solved! '+game.difficulty+' complete in '+fmt(game.seconds)+'.</span>';renderStats();
+ }
+}
+function statsObj(){try{return JSON.parse(localStorage.getItem(STATS))||{}}catch(e){return {}}}
+function recordResult(){
+ const s=statsObj(),d=game.difficulty;s[d]=s[d]||[];
+ s[d].push({seconds:game.seconds,checks:game.checks,date:new Date().toISOString()});localStorage.setItem(STATS,JSON.stringify(s));
+}
+function renderStats(){
+ const d=$('statsDifficulty').value,s=statsObj(),a=s[d]||[];$('completed').textContent=a.length;
+ $('best').textContent=a.length?fmt(Math.min(...a.map(x=>x.seconds))):'—';
+ $('average').textContent=a.length?fmt(Math.round(a.reduce((q,x)=>q+x.seconds,0)/a.length)):'—';
+ $('history').innerHTML=a.length?'<strong>Recent</strong>'+a.slice(-5).reverse().map(x=>'<div><span>'+new Date(x.date).toLocaleDateString()+'</span><span>'+fmt(x.seconds)+' • '+x.checks+' check'+(x.checks===1?'':'s')+'</span></div>').join(''):'<div><span>No completed '+d+' puzzles yet.</span></div>';
+}
+for(let n=1;n<=9;n++){const b=document.createElement('button');b.type='button';b.className='num';b.textContent=n;b.addEventListener('click',()=>input(String(n)));$('numbers').appendChild(b)}
+$('notesBtn').addEventListener('click',e=>{if(paused||game.finished)return;noteMode=!noteMode;e.currentTarget.textContent='✎ Notes: '+(noteMode?'On':'Off');e.currentTarget.classList.toggle('active',noteMode)});
+$('eraseBtn').addEventListener('click',()=>{if(paused||game.finished||selected===null||game.puzzle[selected]!=='0')return;game.values[selected]='0';game.notes[selected]=[];save();render()});
+$('checkBtn').addEventListener('click',()=>{if(paused||game.finished)return;game.checks++;save();render();let bad=0;[...board.children].forEach((b,i)=>{if(game.values[i]!=='0'&&game.puzzle[i]==='0'&&game.values[i]!==game.solution[i]){b.classList.add('bad');bad++}});status.textContent=bad?bad+' incorrect '+(bad===1?'entry':'entries')+' highlighted.':'Everything entered so far is correct.'});
+$('pauseBtn').addEventListener('click',e=>{if(game.finished)return;paused=!paused;e.currentTarget.textContent=paused?'Resume':'Pause';status.textContent=paused?'Timer stopped.':'Back to the puzzle.';render()});
+$('newBtn').addEventListener('click',()=>{if(game&&!game.finished&&!confirm('Start a new puzzle? Your current unfinished puzzle will be replaced.'))return;newGame($('difficulty').value)});
+$('statsBtn').addEventListener('click',()=>{$('statsPanel').classList.remove('hidden');$('statsDifficulty').value=game?game.difficulty:'Medium';renderStats();$('statsPanel').scrollIntoView({behavior:'smooth'})});
+$('closeStats').addEventListener('click',()=>$('statsPanel').classList.add('hidden'));$('statsDifficulty').addEventListener('change',renderStats);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&game&&!game.finished&&!paused){paused=true;$('pauseBtn').textContent='Resume';status.textContent='Auto-paused while away.';render()}});
+if(load()){$('difficulty').value=game.difficulty;status.textContent=game.finished?'Last puzzle completed. Choose New Puzzle to play again.':'Unfinished '+game.difficulty+' puzzle restored.';render()}else newGame('Medium');
+tick=setInterval(()=>{if(game&&!paused&&!game.finished){game.seconds++;timer.textContent=fmt(game.seconds);if(game.seconds%5===0)save()}},1000);
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+})();
+</script>
+</body>
+</html>
