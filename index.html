@@ -6,16 +6,16 @@
 <meta name="theme-color" content="#111827">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Sudoku">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Sudoku Offline</title>
 <style>
 :root{--bg:#f6f7f9;--panel:#fff;--text:#111827;--muted:#6b7280;--line:#9ca3af;--strong:#111827;--accent:#2563eb;--accentbg:#dbeafe;--peer:#eff6ff;--bad:#dc2626;--good:#15803d}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-.app{max-width:620px;margin:auto;padding:14px 12px 32px}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.brand{font-size:22px;font-weight:800}.sub{font-size:13px;color:var(--muted)}
+.app{max-width:620px;margin:auto;padding:14px 12px 32px}.top{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;margin-bottom:14px}.top .brand{font-size:25px}.top .sub{margin-top:4px}.top #statsBtn{align-self:flex-end}.brand{font-size:22px;font-weight:800}.sub{font-size:13px;color:var(--muted)}
 button,select{font:inherit;color:inherit}button{cursor:pointer}.btn{min-height:44px;padding:8px 13px;border:1px solid #cbd5e1;border-radius:10px;background:var(--panel);font-weight:650}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.active{background:var(--accentbg);border-color:var(--accent)}
-.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}.difficulty{min-height:44px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;padding:0 10px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:12px 0}.difficulty{min-height:44px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;padding:0 10px}
 .info{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0}.status{font-size:14px;color:var(--muted);min-height:20px}.timer{font:700 18px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
 .board{display:grid;grid-template-columns:repeat(9,1fr);aspect-ratio:1;width:100%;background:var(--strong);border:2px solid var(--strong);gap:1px;touch-action:manipulation}
 .cell{position:relative;border:0;background:var(--panel);display:flex;align-items:center;justify-content:center;padding:0;font-size:clamp(21px,7vw,32px);font-weight:500;min-width:0}
@@ -27,6 +27,9 @@ button,select{font:inherit;color:inherit}button{cursor:pointer}.btn{min-height:4
 .panel{margin-top:14px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px}.panel h2{font-size:17px;margin:0 0 10px}.statsgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center;padding:9px 4px;background:#f8fafc;border-radius:9px}.stat b{display:block;font-size:18px}.stat span{font-size:11px;color:var(--muted)}
 .history{margin-top:10px;font-size:13px}.history div{display:flex;justify-content:space-between;border-top:1px solid #eee;padding:7px 0}.celebrate{font-weight:800;color:var(--good)}
 .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:12px}
+/* Keep content below the iPhone clock / Dynamic Island in installed mode. */
+@media(display-mode:standalone){.app{padding-top:calc(env(safe-area-inset-top, 0px) + 42px);padding-bottom:max(32px,env(safe-area-inset-bottom, 0px))}}
+/* Safari mode retains normal page spacing; installed mode receives the extra clearance. */
 @media(max-width:390px){.app{padding-left:7px;padding-right:7px}.btn{padding-left:10px;padding-right:10px}.nums{gap:3px}.num{min-height:45px}}
 </style>
 </head>
